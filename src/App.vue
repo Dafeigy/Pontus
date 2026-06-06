@@ -9,7 +9,7 @@ import InitialSetup from "@/components/InitialSetup.vue";
 import { Sonner } from "@/components/ui/sonner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import type { AppConfig } from "@/stores/app";
-import { IconUserPlus, IconLayoutDashboard, IconSettings } from "@tabler/icons-vue";
+import { IconUserPlus, IconLayoutDashboard, IconSettings, IconBoxModel, IconUsersGroup  } from "@tabler/icons-vue";
 
 const store = useAppStore();
 const route = useRoute();
@@ -23,7 +23,7 @@ const data = {
   },
   navMain: [
     {
-      title: "Invite",
+      title: "Invite User",
       url: "#",
       icon: IconUserPlus,
       path: "/invite",
@@ -33,6 +33,18 @@ const data = {
       url: "#",
       icon: IconLayoutDashboard,
       path: "/dashboard",
+    },
+    {
+      title: "Models",
+      url: "#",
+      icon: IconBoxModel,
+      path: "/models",  
+    },
+    {
+      title: "Teams",
+      url: "#",
+      icon: IconUsersGroup,
+      path: "/teams",  
     },
   ],
   navSecondary: [

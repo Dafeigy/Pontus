@@ -19,7 +19,7 @@ const roleOptions = [
   { value: "proxy_admin", label: "网关管理员 (proxy_admin)" },
   { value: "proxy_admin_viewer", label: "审计管理员 (proxy_admin_viewer)" },
   { value: "internal_user", label: "普通用户 (internal_user)" },
-  { value: "internal_user_viewer", label: "普通只读用户 (internal_user_viewer)" },
+  { value: "internal_user_viewer", label: "受限用户 (internal_user_viewer)" },
 ];
 
 async function handleInvite() {
@@ -119,10 +119,10 @@ async function handleInvite() {
         </div>
 
         <!-- Role -->
-        <div class="space-y-2">
+        <div class="space-y-2 ">
           <Label>用户角色</Label>
-          <Select v-model="userRole" :disabled="step === 'sending'">
-            <SelectTrigger>
+          <Select v-model="userRole" :disabled="step === 'sending'" >
+            <SelectTrigger class="w-full">
               <SelectValue placeholder="选择用户角色" />
             </SelectTrigger>
             <SelectContent>
