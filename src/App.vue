@@ -38,7 +38,7 @@ const data = {
       title: "Models",
       url: "#",
       icon: IconBoxModel,
-      path: "/models",  
+      path: "/models",
     },
     {
       title: "Teams",

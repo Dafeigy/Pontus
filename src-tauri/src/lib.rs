@@ -3,7 +3,7 @@ mod commands;
 use commands::{
     config::{get_config_cmd, save_config_cmd, is_initialized_cmd, reset_api_key_cmd},
     email::{complete_invitation, invite_user, send_invite_email},
-    litellm::{create_user, generate_invitation, list_users},
+    litellm::{create_user, generate_invitation, list_users, list_access_groups, test_model},
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -19,6 +19,8 @@ pub fn run() {
             create_user,
             generate_invitation,
             list_users,
+            list_access_groups,
+            test_model,
             send_invite_email,
             complete_invitation,
             invite_user,

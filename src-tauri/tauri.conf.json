@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Pontus",
-        "width": 1100,
-        "height": 750,
+        "width": 1280,
+        "height": 760,
         "resizable": true,
         "fullscreen": false
       }

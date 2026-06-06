@@ -57,6 +57,24 @@ pub struct UserListResponse {
     pub total_pages: i32,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub struct AccessGroup {
+    pub access_group_id: String,
+    pub access_group_name: String,
+    pub description: Option<String>,
+    pub access_model_names: Vec<String>,
+    pub created_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ModelTestResult {
+    pub model: String,
+    pub success: bool,
+    pub latency_ms: u64,
+    pub message: String,
+}
+
 // --- Internal API helpers (return typed structs) ---
 
 fn make_client() -> reqwest::blocking::Client {
@@ -166,6 +184,101 @@ pub fn list_users_internal(app: &AppHandle, page: u32, page_size: u32) -> Result
         .map_err(|e| format!("Parse error: {}", e))
 }
 
+/// Internal: list access groups
+pub fn list_access_groups_internal(app: &AppHandle) -> Result<Vec<AccessGroup>, String> {
+    let (base_url, api_key) = get_api_config(app)?;
+
+    let client = make_client();
+    let response = client
+        .get(format!("{}/v1/access_group", base_url))
+        .header("Authorization", format!("Bearer {}", api_key))
+        .send()
+        .map_err(|e| format!("Request failed: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().unwrap_or_default();
+        return Err(format!("API error {}: {}", status, body));
+    }
+
+    let body = response
+        .text()
+        .map_err(|e| format!("Read body error: {}", e))?;
+    serde_json::from_str::<Vec<AccessGroup>>(&body)
+        .map_err(|e| format!("Parse error: {}", e))
+}
+
+/// Internal: test a model's connectivity and latency
+pub fn test_model_internal(app: &AppHandle, model: &str) -> Result<ModelTestResult, String> {
+    let (base_url, api_key) = get_api_config(app)?;
+    let start = std::time::Instant::now();
+
+    let payload = serde_json::json!({
+        "model": model,
+        "messages": [
+            {
+                "role": "user",
+                "content": " "
+            }
+        ],
+        "temperature": 0.7,
+        "max_tokens": 5
+    });
+
+    let client = make_client();
+    let response = client
+        .post(format!("{}/v1/chat/completions", base_url))
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .json(&payload)
+        .send()
+        .map_err(|e| format!("Request failed: {}", e))?;
+
+    let latency_ms = start.elapsed().as_millis() as u64;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().unwrap_or_default();
+        return Ok(ModelTestResult {
+            model: model.to_string(),
+            success: false,
+            latency_ms,
+            message: format!("HTTP {}: {}", status, body),
+        });
+    }
+
+    let body = response
+        .text()
+        .map_err(|e| format!("Read body error: {}", e))?;
+
+    let v: serde_json::Value =
+        serde_json::from_str(&body).map_err(|e| format!("Parse error: {}", e))?;
+
+    // Check if content or reasoning_content is non-empty
+    let content = v["choices"][0]["message"]["content"]
+        .as_str()
+        .unwrap_or("");
+    let reasoning = v["choices"][0]["message"]["reasoning_content"]
+        .as_str()
+        .unwrap_or("");
+
+    if content.is_empty() && reasoning.is_empty() {
+        Ok(ModelTestResult {
+            model: model.to_string(),
+            success: false,
+            latency_ms,
+            message: "模型返回空内容".to_string(),
+        })
+    } else {
+        Ok(ModelTestResult {
+            model: model.to_string(),
+            success: true,
+            latency_ms,
+            message: format!("{}ms", latency_ms),
+        })
+    }
+}
+
 // --- Tauri commands (async wrappers around blocking I/O) ---
 
 #[tauri::command]
@@ -205,6 +318,31 @@ pub async fn list_users(
 ) -> Result<serde_json::Value, String> {
     let result = tokio::task::spawn_blocking(move || {
         list_users_internal(&app, page, page_size)
+    })
+    .await
+    .map_err(|e| format!("Task error: {}", e))??;
+    serde_json::to_value(&result).map_err(|e| format!("Serialize error: {}", e))
+}
+
+#[tauri::command]
+pub async fn list_access_groups(
+    app: AppHandle,
+) -> Result<serde_json::Value, String> {
+    let result = tokio::task::spawn_blocking(move || {
+        list_access_groups_internal(&app)
+    })
+    .await
+    .map_err(|e| format!("Task error: {}", e))??;
+    serde_json::to_value(&result).map_err(|e| format!("Serialize error: {}", e))
+}
+
+#[tauri::command]
+pub async fn test_model(
+    app: AppHandle,
+    model: String,
+) -> Result<serde_json::Value, String> {
+    let result = tokio::task::spawn_blocking(move || {
+        test_model_internal(&app, &model)
     })
     .await
     .map_err(|e| format!("Task error: {}", e))??;
