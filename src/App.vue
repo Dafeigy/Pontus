@@ -9,7 +9,7 @@ import InitialSetup from "@/components/InitialSetup.vue";
 import { Sonner } from "@/components/ui/sonner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import type { AppConfig } from "@/stores/app";
-import { IconUserPlus, IconLayoutDashboard, IconSettings, IconBoxModel, IconUsersGroup  } from "@tabler/icons-vue";
+import { IconUserPlus, IconLayoutDashboard, IconSettings, IconBoxModel, IconUsersGroup, IconPlaystationTriangle  } from "@tabler/icons-vue";
 
 const store = useAppStore();
 const route = useRoute();
@@ -53,6 +53,12 @@ const data = {
       url: "#",
       icon: IconSettings,
       path: "/settings",
+    },
+    {
+      title: "Playground",
+      url: "#",
+      icon: IconPlaystationTriangle,
+      path: "/playground",
     },
   ],
 };

@@ -12,11 +12,7 @@ const router = createRouter({
       name: "invite",
       component: () => import("@/views/InviteView.vue"),
     },
-    {
-      path: "/settings",
-      name: "settings",
-      component: () => import("@/views/SettingsView.vue"),
-    },
+    
     {
       path: "/dashboard",
       name: "dashboard",
@@ -37,6 +33,18 @@ const router = createRouter({
       name: "teams",
       component: () => import("@/views/TeamsView.vue"),
     },
+    // Nav Secondary
+    {
+      path: "/settings",
+      name: "settings",
+      component: () => import("@/views/SettingsView.vue"),
+    },
+    {
+      path: "/playground",
+      name: "playground",
+      component: () => import("@/views/PlayGroundView.vue"),
+    },
+
   ],
 });
 
