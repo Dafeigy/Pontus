@@ -1,22 +1,9 @@
 <script setup lang="ts">
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/stores/app'
-import { IconSun, IconMoon } from '@tabler/icons-vue'
-import { computed } from 'vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 defineProps(['siteHeader'])
-
-const store = useAppStore()
-
-const isDark = computed(() => store.config.theme === 'dark')
-
-function toggleTheme() {
-  const next = isDark.value ? 'light' : 'dark'
-  store.config.theme = next
-  store.applyTheme(next)
-}
 </script>
 
 <template>
@@ -31,10 +18,7 @@ function toggleTheme() {
         {{ siteHeader }}
       </h1>
       <div class="ml-auto flex items-center">
-        <Button variant="ghost" size="icon" @click="toggleTheme">
-          <IconSun v-if="isDark" class="size-4.5" />
-          <IconMoon v-else class="size-4.5" />
-        </Button>
+        <ThemeToggle />
       </div>
     </div>
   </header>

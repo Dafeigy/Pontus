@@ -138,3 +138,12 @@
     -ms-overflow-style: none; /* IE and Edge */
   }
 }
+
+/* View Transitions API — theme toggle animation */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Default: old snapshot above new — dark→light shrinks old to reveal light beneath */
