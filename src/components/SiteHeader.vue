@@ -1,7 +1,22 @@
 <script setup lang="ts">
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { Button } from '@/components/ui/button'
+import { useAppStore } from '@/stores/app'
+import { IconSun, IconMoon } from '@tabler/icons-vue'
+import { computed } from 'vue'
+
 defineProps(['siteHeader'])
+
+const store = useAppStore()
+
+const isDark = computed(() => store.config.theme === 'dark')
+
+function toggleTheme() {
+  const next = isDark.value ? 'light' : 'dark'
+  store.config.theme = next
+  store.applyTheme(next)
+}
 </script>
 
 <template>
@@ -15,18 +30,12 @@ defineProps(['siteHeader'])
       <h1 class="text-base font-medium">
         {{ siteHeader }}
       </h1>
-      <!-- <div class="ml-auto flex items-center gap-2 bg-indigo-300">
-        <Button variant="ghost" as-child size="sm" class="hidden sm:flex">
-          <a
-            href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
-            rel="noopener noreferrer"
-            target="_blank"
-            class="dark:text-foreground"
-          >
-            GitHub
-          </a>
+      <div class="ml-auto flex items-center">
+        <Button variant="ghost" size="icon" @click="toggleTheme">
+          <IconSun v-if="isDark" class="size-4.5" />
+          <IconMoon v-else class="size-4.5" />
         </Button>
-      </div> -->
+      </div>
     </div>
   </header>
 </template>

@@ -4,7 +4,6 @@ import { invoke } from "@tauri-apps/api/core";
 import Button from "@/components/ui/button/Button.vue";
 import Input from "@/components/ui/input/Input.vue";
 import Label from "@/components/ui/label/Label.vue";
-import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "vue-sonner";
 import type { AppConfig } from "@/stores/app";
@@ -20,7 +19,6 @@ const smtpPort = ref("465");
 const smtpSenderEmail = ref("");
 const smtpUsername = ref("");
 const smtpPassword = ref("");
-const isDark = ref(false);
 const saving = ref(false);
 const resetting = ref(false);
 
@@ -34,7 +32,6 @@ onMounted(async () => {
     smtpSenderEmail.value = config.smtpSenderEmail || "";
     smtpUsername.value = config.smtpUsername || "";
     smtpPassword.value = config.smtpPassword || "";
-    isDark.value = document.documentElement.classList.contains("dark");
   } catch (e) {
     toast.error(`加载配置失败: ${e}`);
   }
@@ -51,7 +48,7 @@ async function saveConfig() {
       smtpSenderEmail: smtpSenderEmail.value,
       smtpUsername: smtpUsername.value,
       smtpPassword: smtpPassword.value,
-      theme: isDark.value ? "dark" : "light",
+      theme: store.config.theme,
     };
     await invoke("save_config_cmd", { config });
     store.config = config;
@@ -80,11 +77,6 @@ async function resetApiKey() {
   }
 }
 
-function toggleTheme(val: boolean) {
-  isDark.value = val;
-  store.config.theme = val ? "dark" : "light";
-  store.applyTheme(val ? "dark" : "light");
-}
 </script>
 
 <template>
@@ -148,23 +140,6 @@ function toggleTheme(val: boolean) {
             <Label for="smtp-password">SMTP 密码</Label>
             <Input id="smtp-password" v-model="smtpPassword" type="password" placeholder="••••••••" />
           </div>
-        </div>
-      </CardContent>
-    </Card>
-
-    <!-- Theme -->
-    <Card>
-      <CardHeader>
-        <CardTitle class="text-base">外观</CardTitle>
-        <CardDescription>自定义应用的外观主题</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium">暗黑模式</p>
-            <p class="text-xs text-muted-foreground">切换应用的亮色 / 暗色主题</p>
-          </div>
-          <Switch v-model="isDark" @update:model-value="toggleTheme" />
         </div>
       </CardContent>
     </Card>
