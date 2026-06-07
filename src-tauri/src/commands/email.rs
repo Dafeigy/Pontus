@@ -142,10 +142,11 @@ pub async fn invite_user(
     user_alias: String,
     user_role: String,
     key_alias: String,
+    models: Vec<String>,
 ) -> Result<serde_json::Value, String> {
     let result: Result<InviteResult, String> = tokio::task::spawn_blocking(move || {
         // Step 1: Create user
-        let user = create_user_internal(&app, &user_email, &user_alias, &user_role, &key_alias)?;
+        let user = create_user_internal(&app, &user_email, &user_alias, &user_role, &key_alias, &models)?;
 
         // Step 2: Generate invitation
         let invitation = generate_invitation_internal(&app, &user.user_id)?;

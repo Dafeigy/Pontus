@@ -1,10 +1,12 @@
 pub mod types;
 pub mod users;
 pub mod models;
+pub mod teams;
 
 // Re-export Tauri commands so lib.rs imports don't change
 pub use users::{create_user, generate_invitation, list_users, create_user_internal, generate_invitation_internal};
 pub use models::{list_access_groups, test_model, chat_stream};
+pub use teams::list_teams;
 
 use crate::commands::config::get_config_cmd;
 use tauri::AppHandle;

@@ -8,6 +8,7 @@ pub struct CreateUserRequest<'a> {
     pub user_alias: &'a str,
     pub user_role: &'a str,
     pub key_alias: &'a str,
+    pub models: &'a [String],
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -52,6 +53,22 @@ pub struct UserListResponse {
     pub page: i32,
     pub page_size: i32,
     pub total_pages: i32,
+}
+
+// --- Team types ---
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TeamInfo {
+    pub team_alias: String,
+    pub team_id: String,
+    pub members: Vec<serde_json::Value>,
+    pub keys: Vec<serde_json::Value>,
+    pub spend: Option<f64>,
+    pub tpm_limit: Option<i64>,
+    pub rpm_limit: Option<i64>,
+    pub max_budget: Option<f64>,
+    pub models: Vec<String>,
+    pub blocked: Option<bool>,
 }
 
 // --- Model / Chat types ---

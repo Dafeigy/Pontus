@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import Button from "@/components/ui/button/Button.vue";
 import Input from "@/components/ui/input/Input.vue";
 import Label from "@/components/ui/label/Label.vue";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectItemText, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Toggle } from "@/components/ui/toggle";
 import { toast } from "vue-sonner";
-import { IconSend, IconLoader2, IconUserPlus, IconMail } from "@tabler/icons-vue";
+import { useCachedFetch } from "@/composables/useCachedFetch";
+import { IconSend, IconLoader2, IconUserPlus, IconMail, IconBoxModel } from "@tabler/icons-vue";
+
+interface AccessGroup {
+  access_group_id: string;
+  access_group_name: string;
+  access_model_names: string[];
+  description?: string;
+}
 
 const userAlias = ref("");
 const userEmail = ref("");
@@ -15,12 +24,48 @@ const userRole = ref("internal_user_viewer");
 const step = ref<"form" | "sending">("form");
 const stepLabel = ref("");
 
+// Model group toggles — keyed by access_group_id
+const modelToggles = ref<Record<string, boolean>>({});
+
 const roleOptions = [
   { value: "proxy_admin", label: "网关管理员 (proxy_admin)" },
   { value: "proxy_admin_viewer", label: "审计管理员 (proxy_admin_viewer)" },
   { value: "internal_user", label: "普通用户 (internal_user)" },
   { value: "internal_user_viewer", label: "受限用户 (internal_user_viewer)" },
 ];
+
+// Load access groups for model toggles
+const { data: accessGroups, fetch: fetchGroups } = useCachedFetch<AccessGroup[]>(
+  "invite_model_groups",
+  async () => {
+    const raw = await invoke("list_access_groups");
+    return JSON.parse(JSON.stringify(raw)) as AccessGroup[];
+  },
+);
+
+onMounted(async () => {
+  await fetchGroups();
+});
+
+// Computed: build the models array from toggled groups
+const selectedModels = computed(() => {
+  if (!accessGroups.value) return ["no-default-models"];
+  const modelSet = new Set<string>();
+  for (const g of accessGroups.value) {
+    if (modelToggles.value[g.access_group_id]) {
+      for (const m of g.access_model_names) {
+        modelSet.add(m);
+      }
+    }
+  }
+  if (modelSet.size === 0) return ["no-default-models"];
+  return Array.from(modelSet);
+});
+
+const anyToggleOn = computed(() => {
+  if (!accessGroups.value) return false;
+  return accessGroups.value.some((g) => modelToggles.value[g.access_group_id]);
+});
 
 async function handleInvite() {
   if (!userEmail.value.trim()) {
@@ -50,6 +95,7 @@ async function handleInvite() {
       userAlias: userAlias.value.trim(),
       userRole: userRole.value,
       keyAlias: `${userAlias.value.trim()}-key`,
+      models: selectedModels.value,
     });
     userId = result.user_id;
     apiKey = result.key;
@@ -72,6 +118,7 @@ async function handleInvite() {
     toast.success("邀请邮件已发送");
     userAlias.value = "";
     userEmail.value = "";
+    modelToggles.value = {};
   } catch (e) {
     toast.error(`邮件发送失败: ${e}`);
   }
@@ -81,7 +128,7 @@ async function handleInvite() {
 </script>
 
 <template>
-  <div class="flex h-full items-start justify-center px-4 pt-12">
+  <div class="flex h-full items-start justify-center px-4 pt-8 pb-8">
     <Card class="w-full max-w-lg">
       <CardHeader class="text-center">
         <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -119,9 +166,9 @@ async function handleInvite() {
         </div>
 
         <!-- Role -->
-        <div class="space-y-2 ">
+        <div class="space-y-2">
           <Label>用户角色</Label>
-          <Select v-model="userRole" :disabled="step === 'sending'" >
+          <Select v-model="userRole" :disabled="step === 'sending'">
             <SelectTrigger class="w-full">
               <SelectValue placeholder="选择用户角色" />
             </SelectTrigger>
@@ -137,6 +184,28 @@ async function handleInvite() {
               </SelectGroup>
             </SelectContent>
           </Select>
+        </div>
+
+        <!-- Model Group Toggles -->
+        <div class="space-y-2">
+          <Label>模型权限</Label>
+          <div class="flex flex-wrap gap-2">
+            <Toggle
+              v-for="group in accessGroups"
+              :key="group.access_group_id"
+              v-model="modelToggles[group.access_group_id]"
+              variant="outline"
+              size="sm"
+              class="data-[state=on]:bg-primary/70 data-[state=on]:text-secondary px-3"
+              :disabled="step === 'sending'"
+            >
+              <IconBoxModel class="size-3.5" />
+              {{ group.access_group_name }}
+            </Toggle>
+          </div>
+          <p class="text-xs text-muted-foreground">
+            {{ anyToggleOn ? '已开启 ' + Object.values(modelToggles).filter(Boolean).length + ' 个模型组' : '未选择模型组，将使用默认权限' }}
+          </p>
         </div>
 
         <!-- Steps indicator -->
