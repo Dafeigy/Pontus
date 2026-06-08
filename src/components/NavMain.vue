@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from "vue"
-import { IconCirclePlusFilled, IconMail } from "@tabler/icons-vue"
+import { IconArrowRight, IconMail } from "@tabler/icons-vue"
 
 import { Button } from '@/components/ui/button'
 import {
@@ -30,11 +30,11 @@ defineProps<{
       <SidebarMenu>
         <SidebarMenuItem class="flex items-center gap-2">
           <SidebarMenuButton
-            tooltip="Quick Create"
+            tooltip="Move to WebUI"
             class="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
           >
-            <IconCirclePlusFilled />
-            <span>Invite User</span>
+            <IconArrowRight />
+            <span>Visit WebUI</span>
           </SidebarMenuButton>
           <Button
             size="icon"

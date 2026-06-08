@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import ThemeToggle from '@/components/ThemeToggle.vue'
+
 defineProps(['siteHeader'])
 </script>
 
@@ -15,18 +17,9 @@ defineProps(['siteHeader'])
       <h1 class="text-base font-medium">
         {{ siteHeader }}
       </h1>
-      <!-- <div class="ml-auto flex items-center gap-2 bg-indigo-300">
-        <Button variant="ghost" as-child size="sm" class="hidden sm:flex">
-          <a
-            href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
-            rel="noopener noreferrer"
-            target="_blank"
-            class="dark:text-foreground"
-          >
-            GitHub
-          </a>
-        </Button>
-      </div> -->
+      <div class="ml-auto flex items-center">
+        <ThemeToggle />
+      </div>
     </div>
   </header>
 </template>
