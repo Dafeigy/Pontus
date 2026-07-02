@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="src/assets/vue.svg" width="64" alt="Pontus" />
+  <img src="app-icon.png" width="64" alt="Pontus" />
   <br>Pontus
 </h1>
 
@@ -116,18 +116,7 @@ npm run tauri dev
 npm run tauri build
 ```
 
-产物位于 `src-tauri/target/release/bundle/`。
-
-## Tauri 命令一览
-
-| 命令 | 用途 |
-|---|---|
-| `is_initialized_cmd` | 检查是否已完成首次配置 |
-| `get_config_cmd` / `save_config_cmd` / `reset_api_key_cmd` | 应用配置读写 |
-| `create_user` / `generate_invitation` / `list_users` | Litellm 用户管理 |
-| `list_access_groups` / `test_model` | 模型列表与连通性测试 |
-| `chat_stream` | 流式对话 (SSE → event emit) |
-| `send_invite_email` / `complete_invitation` / `invite_user` | 邮件邀请 |
+产物位于 `src-tauri/target/release/pontus.exe`。
 
 ## 配置存储
 

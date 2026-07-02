@@ -29,8 +29,19 @@ jobs:
       - name: Build Tauri app (portable exe)
         run: npm run tauri build
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Get commit message
+        id: commit
+        run: |
+          $msg = git log -1 --format=%B
+          $msg = $msg -replace "`r`n", "`n"
+          "message<<EOF" >> $env:GITHUB_OUTPUT
+          echo $msg >> $env:GITHUB_OUTPUT
+          "EOF" >> $env:GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: pontus-windows-exe
-          path: src-tauri/target/release/pontus.exe
+          body: ${{ steps.commit.outputs.message }}
+          files: src-tauri/target/release/pontus.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

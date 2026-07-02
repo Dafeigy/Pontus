@@ -1,6 +1,6 @@
 [package]
 name = "pontus"
-version = "1.0.0"
+version = "1.0.1"
 description = "Litellm Admin Desktop App"
 authors = ["NUL4i"]
 edition = "2021"
