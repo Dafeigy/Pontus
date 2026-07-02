@@ -15,18 +15,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Textarea from "@/components/ui/textarea/Textarea.vue";
-import { IconSend, IconTrash, IconBoxModel, IconSparkles } from "@tabler/icons-vue";
+import { IconSend, IconTrash, IconBoxModel, IconSparkles, IconBrain } from "@tabler/icons-vue";
 
 // --- Types ---
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+  thinkContent: string;
 }
 
 interface StreamChunk {
   stream_id: string;
   content: string;
+  think_content: string;
   done: boolean;
   error: string | null;
 }
@@ -87,12 +89,13 @@ onMounted(async () => {
 
     if (event.payload.error) {
       const lastMsg = messages.value[messages.value.length - 1];
-      if (lastMsg && lastMsg.role === "assistant" && lastMsg.content === "") {
+      if (lastMsg && lastMsg.role === "assistant" && lastMsg.content === "" && lastMsg.thinkContent === "") {
         lastMsg.content = `❌ 错误: ${event.payload.error}`;
       } else {
         messages.value.push({
           role: "system",
           content: `❌ 错误: ${event.payload.error}`,
+          thinkContent: "",
         });
       }
       finishStream();
@@ -106,7 +109,22 @@ onMounted(async () => {
 
     const lastMsg = messages.value[messages.value.length - 1];
     if (lastMsg && lastMsg.role === "assistant") {
-      lastMsg.content += event.payload.content;
+      // Accumulate reasoning/think content (from dedicated delta field)
+      if (event.payload.think_content) {
+        lastMsg.thinkContent += event.payload.think_content;
+      }
+      // Accumulate regular content
+      if (event.payload.content) {
+        lastMsg.content += event.payload.content;
+      }
+      // Parse inline <think> tags from content (for models that embed them)
+      if (lastMsg.content) {
+        const extracted = extractThinkBlocks(lastMsg.content);
+        if (extracted.thinkText) {
+          lastMsg.thinkContent += extracted.thinkText;
+          lastMsg.content = extracted.cleanText;
+        }
+      }
       scrollToBottom();
     }
   });
@@ -140,8 +158,8 @@ async function sendMessage() {
 
   inputText.value = "";
 
-  messages.value.push({ role: "user", content: text });
-  messages.value.push({ role: "assistant", content: "" });
+  messages.value.push({ role: "user", content: text, thinkContent: "" });
+  messages.value.push({ role: "assistant", content: "", thinkContent: "" });
   scrollToBottom();
 
   const apiMessages = messages.value
@@ -177,6 +195,21 @@ function handleKeydown(e: KeyboardEvent) {
     e.preventDefault();
     sendMessage();
   }
+}
+
+// --- Think-block extraction (for models that embed <think> tags in content) ---
+
+function extractThinkBlocks(text: string): { cleanText: string; thinkText: string } {
+  let thinkText = "";
+
+  // Match complete <think>...</think> blocks only (both tags present)
+  const fullThinkRegex = /<think>([\s\S]*?)<\/think>/g;
+  const cleanText = text.replace(fullThinkRegex, (_match, inner: string) => {
+    thinkText += inner;
+    return "";
+  });
+
+  return { cleanText, thinkText };
 }
 
 // --- Markdown rendering ---
@@ -249,22 +282,35 @@ function renderContent(text: string): string {
           <div class="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 bg-muted text-sm">
             <!-- 等待中: 打字动画点 -->
             <div
-              v-if="msg.content === '' && isStreaming"
+              v-if="msg.content === '' && msg.thinkContent === '' && isStreaming"
               class="flex items-center gap-1 py-0.5"
             >
               <span class="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style="animation-delay: 0ms"></span>
               <span class="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style="animation-delay: 150ms"></span>
               <span class="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style="animation-delay: 300ms"></span>
             </div>
+
+            <!-- 思考内容（可折叠） -->
+            <details v-if="msg.thinkContent" class="think-section mb-2" :open="isStreaming && i === messages.length - 1">
+              <summary class="think-summary">
+                <IconBrain class="size-3.5 shrink-0" />
+                <span>Thinking</span>
+              </summary>
+              <div
+                class="think-content prose prose-sm max-w-none [&_pre]:my-2 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:bg-amber-100/30 dark:[&_pre]:bg-amber-900/20 [&_pre]:overflow-x-auto [&_code]:text-xs [&_.inline-code]:rounded [&_.inline-code]:bg-amber-100/50 dark:[&_.inline-code]:bg-amber-900/30 [&_.inline-code]:px-1 [&_.inline-code]:py-0.5 [&_.inline-code]:text-xs [&_.inline-code]:font-mono [&_.code-block]:font-mono [&_.code-block]:text-xs [&_strong]:font-semibold"
+                v-html="renderContent(msg.thinkContent)"
+              ></div>
+            </details>
+
             <!-- 渲染 Markdown -->
             <div
-              v-else
+              v-if="msg.content"
               class="prose prose-sm dark:prose-invert max-w-none wrap-break-word [&_pre]:my-2 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:bg-muted-foreground/10 [&_pre]:overflow-x-auto [&_code]:text-xs [&_.inline-code]:rounded [&_.inline-code]:bg-muted-foreground/15 [&_.inline-code]:px-1 [&_.inline-code]:py-0.5 [&_.inline-code]:text-xs [&_.inline-code]:font-mono [&_.code-block]:font-mono [&_.code-block]:text-xs [&_strong]:font-semibold"
               v-html="renderContent(msg.content)"
             ></div>
             <!-- 流式光标 -->
             <span
-              v-if="isStreaming && i === messages.length - 1 && msg.content !== ''"
+              v-if="isStreaming && i === messages.length - 1 && (msg.content !== '' || msg.thinkContent !== '')"
               class="inline-block w-1.5 h-4 ml-1 -mb-0.5 bg-primary animate-pulse rounded-sm align-middle"
             ></span>
           </div>
@@ -337,6 +383,57 @@ function renderContent(text: string): string {
             </div>
         </div>
     </div>
-    
+
   </div>
 </template>
+
+<style scoped>
+.think-section {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.think-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  background: linear-gradient(135deg, hsl(45 20% 94%), hsl(40 15% 90%));
+  border-radius: 0.375rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.dark .think-summary {
+  background: linear-gradient(135deg, hsl(35 8% 18%), hsl(30 6% 14%));
+}
+
+.think-summary:hover {
+  background: linear-gradient(135deg, hsl(45 30% 90%), hsl(40 25% 86%));
+}
+
+.dark .think-summary:hover {
+  background: linear-gradient(135deg, hsl(35 10% 22%), hsl(30 8% 18%));
+}
+
+.think-summary::-webkit-details-marker {
+  display: none;
+}
+
+.think-content {
+  padding: 0.5rem 0.5rem 0.25rem;
+  font-size: 0.8125rem;
+  color: hsl(35 20% 30%);
+  border-left: 2px solid hsl(40 30% 70%);
+  margin-left: 0.25rem;
+}
+
+.dark .think-content {
+  color: hsl(40 15% 70%);
+  border-left-color: hsl(35 15% 35%);
+}
+</style>

@@ -132,6 +132,7 @@ pub fn chat_stream_internal(
                 StreamChunk {
                     stream_id: stream_id.clone(),
                     content: String::new(),
+                    think_content: String::new(),
                     done: true,
                     error: Some(err_msg.clone()),
                 },
@@ -148,6 +149,7 @@ pub fn chat_stream_internal(
             StreamChunk {
                 stream_id: stream_id.clone(),
                 content: String::new(),
+                think_content: String::new(),
                 done: true,
                 error: Some(err_msg.clone()),
             },
@@ -165,6 +167,7 @@ pub fn chat_stream_internal(
                 StreamChunk {
                     stream_id: stream_id.clone(),
                     content: String::new(),
+                    think_content: String::new(),
                     done: true,
                     error: Some(err_msg.clone()),
                 },
@@ -188,6 +191,7 @@ pub fn chat_stream_internal(
                 StreamChunk {
                     stream_id: stream_id.clone(),
                     content: String::new(),
+                    think_content: String::new(),
                     done: true,
                     error: None,
                 },
@@ -203,18 +207,15 @@ pub fn chat_stream_internal(
                 .as_str()
                 .unwrap_or("");
 
-            let text = if !reasoning.is_empty() {
-                reasoning
-            } else {
-                content
-            };
-
-            if !text.is_empty() {
+            // Emit both reasoning (think) and regular content independently —
+            // they can appear in the same chunk with some models.
+            if !reasoning.is_empty() || !content.is_empty() {
                 let _ = app.emit(
                     "chat-stream-chunk",
                     StreamChunk {
                         stream_id: stream_id.clone(),
-                        content: text.to_string(),
+                        content: content.to_string(),
+                        think_content: reasoning.to_string(),
                         done: false,
                         error: None,
                     },
@@ -229,6 +230,7 @@ pub fn chat_stream_internal(
         StreamChunk {
             stream_id: stream_id.clone(),
             content: String::new(),
+            think_content: String::new(),
             done: true,
             error: None,
         },

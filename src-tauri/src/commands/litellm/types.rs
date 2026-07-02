@@ -101,6 +101,7 @@ pub struct ChatMessage {
 pub struct StreamChunk {
     pub stream_id: String,
     pub content: String,
+    pub think_content: String,
     pub done: bool,
     pub error: Option<String>,
 }
