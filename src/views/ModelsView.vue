@@ -74,11 +74,7 @@ async function testModel(model: string) {
 async function testAllModels() {
   testAllInProgress.value = true;
   const models = allModels.value;
-  const batchSize = 5;
-  for (let i = 0; i < models.length; i += batchSize) {
-    const batch = models.slice(i, i + batchSize);
-    await Promise.all(batch.map((m) => testModel(m)));
-  }
+  await Promise.all(models.map((m) => testModel(m)));
   testAllInProgress.value = false;
 }
 

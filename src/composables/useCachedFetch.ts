@@ -68,3 +68,31 @@ export function useCachedFetch<T>(name: string, fetcher: () => Promise<T>) {
     isCached: () => isCacheFresh(name),
   };
 }
+
+/**
+ * Get all pontus cache entries with their sizes.
+ * Returns an array of { key, size } objects.
+ */
+export function getCacheInfo(): { key: string; size: number }[] {
+  const entries: { key: string; size: number }[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(CACHE_PREFIX)) {
+      const raw = localStorage.getItem(key) || "";
+      entries.push({ key, size: new Blob([raw]).size });
+    }
+  }
+  return entries;
+}
+
+/**
+ * Clear all pontus cache entries from localStorage.
+ * Returns the number of entries removed.
+ */
+export function clearAllCache(): number {
+  const info = getCacheInfo();
+  for (const { key } of info) {
+    localStorage.removeItem(key);
+  }
+  return info.length;
+}

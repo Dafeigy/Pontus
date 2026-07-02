@@ -9,10 +9,19 @@ pub use models::{list_access_groups, test_model, chat_stream};
 pub use teams::list_teams;
 
 use crate::commands::config::get_config_cmd;
+use std::sync::LazyLock;
 use tauri::AppHandle;
 
 pub fn make_client() -> reqwest::blocking::Client {
     reqwest::blocking::Client::new()
+}
+
+/// A single shared async client — cloned per use (cheap, backed by Arc).
+/// Connection pooling and TLS session reuse work across all cloned handles.
+static ASYNC_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
+
+pub fn make_async_client() -> reqwest::Client {
+    ASYNC_CLIENT.clone()
 }
 
 pub fn get_api_config(app: &AppHandle) -> Result<(String, String), String> {

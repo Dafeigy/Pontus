@@ -9,6 +9,7 @@ import { toast } from "vue-sonner";
 import type { AppConfig } from "@/stores/app";
 import { useAppStore } from "@/stores/app";
 import { IconDeviceFloppy, IconKey, IconTrash } from "@tabler/icons-vue";
+import { getCacheInfo, clearAllCache } from "@/composables/useCachedFetch";
 
 const store = useAppStore();
 
@@ -21,6 +22,18 @@ const smtpUsername = ref("");
 const smtpPassword = ref("");
 const saving = ref(false);
 const resetting = ref(false);
+const clearingCache = ref(false);
+const cacheEntries = ref<{ key: string; size: number }[]>([]);
+
+function loadCacheInfo() {
+  cacheEntries.value = getCacheInfo();
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 onMounted(async () => {
   try {
@@ -35,6 +48,7 @@ onMounted(async () => {
   } catch (e) {
     toast.error(`加载配置失败: ${e}`);
   }
+  loadCacheInfo();
 });
 
 async function saveConfig() {
@@ -75,6 +89,12 @@ async function resetApiKey() {
   } finally {
     resetting.value = false;
   }
+}
+
+function clearCache() {
+  const removed = clearAllCache();
+  loadCacheInfo();
+  toast.success(`已清除 ${removed} 条缓存记录`);
 }
 
 </script>
@@ -141,6 +161,38 @@ async function resetApiKey() {
             <Input id="smtp-password" v-model="smtpPassword" type="password" placeholder="••••••••" />
           </div>
         </div>
+      </CardContent>
+    </Card>
+
+    <!-- Cache -->
+    <Card>
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2 text-base">🗄️ 本地缓存</CardTitle>
+        <CardDescription>管理浏览器本地存储的缓存数据</CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-3">
+        <div v-if="cacheEntries.length > 0">
+          <p class="text-sm text-muted-foreground mb-2">
+            共 {{ cacheEntries.length }} 条缓存，
+            总计 {{ formatSize(cacheEntries.reduce((s, e) => s + e.size, 0)) }}
+          </p>
+          <div class="max-h-32 overflow-y-auto space-y-1 text-xs text-muted-foreground">
+            <div v-for="entry in cacheEntries" :key="entry.key" class="flex justify-between">
+              <span class="font-mono">{{ entry.key.replace('pontus_cache_', '') }}</span>
+              <span>{{ formatSize(entry.size) }}</span>
+            </div>
+          </div>
+        </div>
+        <p v-else class="text-sm text-muted-foreground">暂无缓存数据</p>
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="clearingCache || cacheEntries.length === 0"
+          @click="clearCache"
+        >
+          <IconTrash class="mr-2 h-4 w-4" />
+          清除所有缓存
+        </Button>
       </CardContent>
     </Card>
 

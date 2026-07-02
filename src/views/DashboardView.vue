@@ -7,7 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { toast } from "vue-sonner";
 import { IconRefresh, IconUsers } from "@tabler/icons-vue";
-import { useCachedFetch } from "@/composables/useCachedFetch";
 
 interface UserInfo {
   user_id: string;
@@ -26,12 +25,6 @@ interface UserListResponse {
   page_size: number;
   total_pages: number;
 }
-
-// Cached fetch — only caches the first page; subsequent pages fetch fresh
-const usersCache = useCachedFetch<UserListResponse>(
-  `dashboard_users_page_1`,
-  () => invoke("list_users", { page: 1, pageSize: pageSize })
-);
 
 const loading = ref(false);
 const users = ref<UserInfo[]>([]);
@@ -63,10 +56,10 @@ function roleLabel(role: string | null): string {
   return role ? (roleLabels[role] ?? role) : "-";
 }
 
-async function loadUsers(force = false) {
+async function loadUsers() {
   loading.value = true;
   try {
-    const result = await usersCache.fetch(force);
+    const result = await invoke<UserListResponse>("list_users", { page: page.value, pageSize: pageSize });
     users.value = result.users;
     total.value = result.total;
     totalPages.value = result.total_pages;
@@ -78,7 +71,8 @@ async function loadUsers(force = false) {
 }
 
 async function refreshUsers() {
-  await loadUsers(true);
+  page.value = 1;
+  await loadUsers();
 }
 
 function prevPage() {

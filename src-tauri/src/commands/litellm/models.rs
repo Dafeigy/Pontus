@@ -1,7 +1,7 @@
 use std::io::{BufRead, BufReader};
 
 use crate::commands::litellm::types::*;
-use crate::commands::litellm::{get_api_config, make_client};
+use crate::commands::litellm::{get_api_config, make_async_client, make_client};
 use tauri::AppHandle;
 use tauri::Emitter;
 
@@ -31,8 +31,8 @@ pub fn list_access_groups_internal(app: &AppHandle) -> Result<Vec<AccessGroup>, 
         .map_err(|e| format!("Parse error: {}", e))
 }
 
-/// Internal: test a model's connectivity and latency
-pub fn test_model_internal(app: &AppHandle, model: &str) -> Result<ModelTestResult, String> {
+/// Internal: test a model's connectivity and latency (async — runs truly concurrently)
+pub async fn test_model_internal(app: &AppHandle, model: &str) -> Result<ModelTestResult, String> {
     let (base_url, api_key) = get_api_config(app)?;
     let start = std::time::Instant::now();
 
@@ -48,20 +48,21 @@ pub fn test_model_internal(app: &AppHandle, model: &str) -> Result<ModelTestResu
         "max_tokens": 5
     });
 
-    let client = make_client();
+    let client = make_async_client();
     let response = client
         .post(format!("{}/v1/chat/completions", base_url))
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {}", api_key))
         .json(&payload)
         .send()
+        .await
         .map_err(|e| format!("Request failed: {}", e))?;
 
     let latency_ms = start.elapsed().as_millis() as u64;
 
     if !response.status().is_success() {
         let status = response.status();
-        let body = response.text().unwrap_or_default();
+        let body = response.text().await.unwrap_or_default();
         return Ok(ModelTestResult {
             model: model.to_string(),
             success: false,
@@ -72,6 +73,7 @@ pub fn test_model_internal(app: &AppHandle, model: &str) -> Result<ModelTestResu
 
     let body = response
         .text()
+        .await
         .map_err(|e| format!("Read body error: {}", e))?;
 
     let v: serde_json::Value =
@@ -254,11 +256,7 @@ pub async fn test_model(
     app: AppHandle,
     model: String,
 ) -> Result<serde_json::Value, String> {
-    let result = tokio::task::spawn_blocking(move || {
-        test_model_internal(&app, &model)
-    })
-    .await
-    .map_err(|e| format!("Task error: {}", e))??;
+    let result = test_model_internal(&app, &model).await?;
     serde_json::to_value(&result).map_err(|e| format!("Serialize error: {}", e))
 }
 
